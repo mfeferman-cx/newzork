@@ -98,6 +98,59 @@ def look_command(args):
     
     print(f"{RED}You don't see that here.{RESET}")
 
+def go_command(args):
+    """Handle the go command."""
+    if not args:
+        print(f"{RED}Go where?{RESET}")
+        return
+    
+    direction = args[0]
+    
+    # Handle direction aliases
+    direction_aliases = {
+        "n": "north",
+        "s": "south",
+        "e": "east",
+        "w": "west",
+        "u": "up",
+        "d": "down"
+    }
+    direction = direction_aliases.get(direction, direction)
+    
+    current_room = world_data.rooms[game_state.current_room]
+    
+    # Check if exit exists
+    if direction not in current_room['exits']:
+        print(f"{RED}You can't go that way.{RESET}")
+        return
+    
+    destination_id = current_room['exits'][direction]
+    destination = world_data.rooms[destination_id]
+    
+    # Special rule: lower_platform is dark and requires light
+    if destination_id == "lower_platform":
+        has_light = False
+        # Check if player has a light source
+        for item_id in game_state.inventory:
+            item = world_data.items[item_id]
+            if item.get('light_source', False):
+                has_light = True
+                break
+        
+        if not has_light:
+            print(f"{RED}It's too dark to go down there. You'd surely fall and break your neck.{RESET}")
+            return
+    
+    # Special rule: control_room is locked and requires key
+    if destination_id == "control_room" and not game_state.door_unlocked:
+        print(f"{RED}The maintenance door is locked tight. You'll need a key.{RESET}")
+        return
+    
+    # Move to the new room
+    game_state.current_room = destination_id
+    describe_room(destination_id)
+
+
 def quit_command(args):
     """Handle the quit command."""
     print(f"{WHITE}The darkness closes in...{RESET}")
@@ -123,10 +176,15 @@ def main():
             # Handle commands
             if verb in ["look", "l", "examine", "x"]:
                 look_command(args)
+            elif verb in ["go", "walk", "move"]:
+                go_command(args)
+            elif verb in ["n", "north", "s", "south", "e", "east", "w", "west", "u", "up", "d", "down"]:
+                # Handle direction shortcuts
+                go_command([verb])
             elif verb in ["quit", "exit"]:
                 quit_command(args)
             else:
-                print(f"{RED}You can't do that here. Try: look, quit.{RESET}")
+                print(f"{RED}You can't do that here. Try: look, go, quit.{RESET}")
                 
         except KeyboardInterrupt:
             print(f"\n{WHITE}The darkness closes in...{RESET}")
