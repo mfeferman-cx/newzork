@@ -98,6 +98,157 @@ def look_command(args):
     
     print(f"{RED}You don't see that here.{RESET}")
 
+def take_command(args):
+    """Handle the take command."""
+    if not args:
+        print(f"{RED}Take what?{RESET}")
+        return
+    
+    item_name = " ".join(args).lower()
+    
+    # Strip articles
+    articles = ["a", "an", "the", "it"]
+    words = item_name.split()
+    if words and words[0] in articles:
+        item_name = " ".join(words[1:])
+    
+    current_room = world_data.rooms[game_state.current_room]
+    
+    # Find the item in the room
+    item_id = None
+    for iid in current_room['items']:
+        item = world_data.items[iid]
+        if item_name in [item['name']] + item.get('synonyms', []):
+            item_id = iid
+            break
+    
+    if not item_id:
+        print(f"{RED}You don't see that here.{RESET}")
+        return
+    
+    item = world_data.items[item_id]
+    
+    if not item.get('takeable', False):
+        print(f"{RED}You can't take that.{RESET}")
+        return
+    
+    # Remove item from room and add to inventory
+    current_room['items'].remove(item_id)
+    game_state.inventory.append(item_id)
+    
+    print(f"{WHITE}Taken.{RESET}")
+
+
+def inventory_command(args):
+    """Handle the inventory command."""
+    if not game_state.inventory:
+        print(f"{WHITE}You're not carrying anything.{RESET}")
+        return
+    
+    print(f"{WHITE}You're carrying:{RESET}")
+    for item_id in game_state.inventory:
+        item = world_data.items[item_id]
+        print(f"  {CYAN}{item['name']}{RESET}")
+
+
+def use_command(args):
+    """Handle the use command."""
+    if not args:
+        print(f"{RED}Use what?{RESET}")
+        return
+    
+    # Check if this is "use X on Y" format
+    if "on" in args:
+        on_index = args.index("on")
+        if on_index == 0 or on_index == len(args) - 1:
+            print(f"{RED}Use what on what?{RESET}")
+            return
+        item_name = " ".join(args[:on_index]).lower()
+        target_name = " ".join(args[on_index + 1:]).lower()
+    else:
+        item_name = " ".join(args).lower()
+        target_name = None
+    
+    # Strip articles
+    articles = ["a", "an", "the", "it"]
+    item_words = item_name.split()
+    if item_words and item_words[0] in articles:
+        item_name = " ".join(item_words[1:])
+    
+    if target_name:
+        target_words = target_name.split()
+        if target_words and target_words[0] in articles:
+            target_name = " ".join(target_words[1:])
+    
+    # Find the item in inventory
+    item_id = None
+    for iid in game_state.inventory:
+        item = world_data.items[iid]
+        if item_name in [item['name']] + item.get('synonyms', []):
+            item_id = iid
+            break
+    
+    if not item_id:
+        print(f"{RED}You don't have that.{RESET}")
+        return
+    
+    item = world_data.items[item_id]
+    
+    # If no target specified, just try to use the item
+    if not target_name:
+        if item.get('use_with', {}):
+            # Item has specific use cases, need a target
+            print(f"{RED}Use {item['name']} on what?{RESET}")
+        else:
+            # Generic use
+            print(f"{WHITE}You use the {item['name']}. Nothing happens.{RESET}")
+        return
+    
+    # Find the target (could be item, feature, or exit)
+    current_room = world_data.rooms[game_state.current_room]
+    target_id = None
+    
+    # Check room items
+    for iid in current_room['items']:
+        target_item = world_data.items[iid]
+        if target_name in [target_item['name']] + target_item.get('synonyms', []):
+            target_id = iid
+            break
+    
+    # Check room features
+    if not target_id:
+        for fid in current_room['features']:
+            feature = world_data.features[fid]
+            if target_name in [feature['name']] + feature.get('synonyms', []):
+                target_id = fid
+                break
+    
+    # Check if target is the special door
+    if not target_id and target_name in ["door", "maintenance door", "north door"]:
+        target_id = "control_room_door"
+    
+    if not target_id:
+        print(f"{RED}You don't see that here.{RESET}")
+        return
+    
+    # Check if item can be used with this target
+    use_with = item.get('use_with', {})
+    if target_id not in use_with:
+        print(f"{RED}That doesn't work.{RESET}")
+        return
+    
+    # Apply the effect
+    effect = use_with[target_id]
+    if target_id == "control_room_door" and effect == "unlock":
+        if game_state.door_unlocked:
+            print(f"{WHITE}The door is already unlocked.{RESET}")
+        else:
+            game_state.door_unlocked = True
+            print(f"{WHITE}You unlock the maintenance door with the key.{RESET}")
+    else:
+        print(f"{WHITE}You use the {item['name']} on the {target_name}. Nothing happens.{RESET}")
+
+
 def go_command(args):
     """Handle the go command."""
     if not args:
@@ -181,10 +332,20 @@ def main():
             elif verb in ["n", "north", "s", "south", "e", "east", "w", "west", "u", "up", "d", "down"]:
                 # Handle direction shortcuts
                 go_command([verb])
+            elif verb in ["take", "get", "grab", "pick"]:
+                # Handle "pick up" as well
+                if verb == "pick" and args and args[0] == "up":
+                    take_command(args[1:])
+                else:
+                    take_command(args)
+            elif verb in ["inventory", "i", "inv"]:
+                inventory_command(args)
+            elif verb in ["use", "activate", "apply"]:
+                use_command(args)
             elif verb in ["quit", "exit"]:
                 quit_command(args)
             else:
-                print(f"{RED}You can't do that here. Try: look, go, quit.{RESET}")
+                print(f"{RED}You can't do that here. Try: look, go, take, use, inventory, quit.{RESET}")
                 
         except KeyboardInterrupt:
             print(f"\n{WHITE}The darkness closes in...{RESET}")
