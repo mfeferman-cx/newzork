@@ -5,6 +5,10 @@ This module contains the room and item definitions for the first milestone
 of the NewZork text adventure game.
 """
 
+# Global state
+lights_on = False
+
+
 # Rooms
 rooms = {
     "main_concourse": {
@@ -17,7 +21,7 @@ rooms = {
             "down": "lower_platform"
         },
         "items": ["flashlight"],
-        "features": ["control_room_door"],
+        "features": ["control_room_door", "broken_panel"],
         "dark": False,
         "cold": False
     },
@@ -30,7 +34,7 @@ rooms = {
             "west": "main_concourse",
             "north": "control_room"
         },
-        "items": ["subway_token", "maintenance_key"],
+        "items": ["subway_token", "maintenance_key", "fuel_cell"],
         "features": ["control_room_door"],
         "dark": False,
         "cold": False
@@ -54,12 +58,40 @@ rooms = {
         "description": "The stairs down have partially collapsed, and the platform below is shrouded in darkness. A rusted turnstile blocks the path, and an old MTA map hangs crookedly on the wall. You can barely make out the shapes of abandoned subway cars in the shadows.",
         "short_desc": "You're on the dark lower platform, where collapsed stairs lead to shadowy depths.",
         "exits": {
-            "up": "main_concourse"
+            "up": "main_concourse",
+            "north": "toolshed",
+            "east": "old_office"
         },
-        "items": [],
-        "features": ["rusted_turnstile", "mta_map"],
+        "items": ["panel_key"],
+        "features": ["rusted_turnstile", "mta_map", "generator"],
         "dark": True,
         "cold": True
+    },
+    "toolshed": {
+        "id": "toolshed",
+        "name": "Toolshed",
+        "description": "A cramped maintenance toolshed. Rakes, shovels, and snow shovels line the walls. A radio sits on a shelf, its display dead.",
+        "short_desc": "You're in the cramped maintenance toolshed. Tools line the walls.",
+        "exits": {
+            "south": "lower_platform"
+        },
+        "items": [],
+        "features": [],
+        "dark": False,
+        "cold": False
+    },
+    "old_office": {
+        "id": "old_office",
+        "name": "Old Office",
+        "description": "The museum curator's old office. Papers are scattered across the floor. A coffee mug sits on the desk, frozen mid-spill.",
+        "short_desc": "You're in the curator's old office, papers scattered everywhere.",
+        "exits": {
+            "west": "lower_platform"
+        },
+        "items": [],
+        "features": [],
+        "dark": False,
+        "cold": False
     }
 }
 
@@ -118,6 +150,36 @@ items = {
         "drinkable": False,
         "weapon": False,
         "synonyms": ["flares", "box"]
+    },
+    "panel_key": {
+        "id": "panel_key",
+        "name": "panel key",
+        "description": "A tiny brass key with an electrical union stamp. It's warm to the touch.",
+        "takeable": True,
+        "use_with": {
+            "broken_panel": "unlock"
+        },
+        "consumable": False,
+        "light_source": False,
+        "edible": False,
+        "drinkable": False,
+        "weapon": False,
+        "synonyms": ["key", "tiny key", "brass key"]
+    },
+    "fuel_cell": {
+        "id": "fuel_cell",
+        "name": "fuel cell",
+        "description": "A heavy steel cylinder with radiation stickers. The gauge reads 73%.",
+        "takeable": True,
+        "use_with": {
+            "generator": "restore_power"
+        },
+        "consumable": True,
+        "light_source": False,
+        "edible": False,
+        "drinkable": False,
+        "weapon": False,
+        "synonyms": ["cell", "nuclear cell", "steel cylinder"]
     }
 }
 
@@ -145,8 +207,31 @@ features = {
         "id": "mta_map",
         "name": "MTA map",
         "description": "An old MTA subway map, its colors faded by time and moisture.",
+        "text": "A, C, E lines run north-south. The 1, 2, 3 run cross-town. None of it matters now. The maintenance key fits the fusebox on the main concourse.",
         "takeable": False,
         "use_with": {},
         "synonyms": ["map", "subway map"]
+    },
+    "broken_panel": {
+        "id": "broken_panel",
+        "name": "broken panel",
+        "description": "An old fusebox panel, its face rusted shut. There's a tiny keyhole at the bottom.",
+        "text": "The wiring inside is scorched. You'll need a fuel cell to restore power.",
+        "takeable": False,
+        "use_with": {
+            "panel_key": "unlock"
+        },
+        "synonyms": ["panel", "fusebox", "fusebox panel"]
+    },
+    "generator": {
+        "id": "generator",
+        "name": "generator",
+        "description": "A massive diesel generator, cold and silent. The fuel cell slot gapes open.",
+        "text": "The generator hums steadily. The fuel gauge reads 73%.",
+        "takeable": False,
+        "use_with": {
+            "fuel_cell": "restore_power"
+        },
+        "synonyms": ["backup generator", "diesel generator"]
     }
 }
