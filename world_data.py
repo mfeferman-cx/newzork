@@ -63,7 +63,7 @@ rooms = {
             "east": "old_office"
         },
         "items": ["panel_key"],
-        "features": ["rusted_turnstile", "mta_map", "generator"],
+        "features": ["rusted_turnstile", "mta_map", "generator", "broken_panel"],
         "dark": True,
         "cold": True
     },
