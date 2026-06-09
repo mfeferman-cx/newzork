@@ -362,7 +362,14 @@ def go_command(args):
     }
     direction = direction_aliases.get(direction, direction)
     
-    current_room = world_data.rooms[game_state.current_room]
+    current_room = world_data.rooms[game_state.current_room].copy()  # Make a copy to modify
+    
+    # M2: Handle conditional exits for lower_platform based on lights_on
+    if game_state.current_room == "lower_platform" and game_state.lights_on:
+        # Add the conditional exits when lights are on
+        current_room['exits'] = current_room['exits'].copy()  # Make a copy of exits
+        current_room['exits']['north'] = "toolshed"
+        current_room['exits']['east'] = "old_office"
     
     # Check if exit exists
     if direction not in current_room['exits']:

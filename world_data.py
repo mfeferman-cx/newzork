@@ -58,9 +58,7 @@ rooms = {
         "description": "The stairs down have partially collapsed, and the platform below is shrouded in darkness. A rusted turnstile blocks the path, and an old MTA map hangs crookedly on the wall. You can barely make out the shapes of abandoned subway cars in the shadows.",
         "short_desc": "You're on the dark lower platform, where collapsed stairs lead to shadowy depths.",
         "exits": {
-            "up": "main_concourse",
-            "north": "toolshed",
-            "east": "old_office"
+            "up": "main_concourse"
         },
         "items": ["panel_key"],
         "features": ["rusted_turnstile", "mta_map", "generator", "broken_panel"],
