@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEWZORK</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: #d0d0d0;
+    --green: #5fff5f;
+    --yellow: #ffe45f;
+    --cyan: #5fdfff;
+    --red: #ff5f5f;
+    --magenta: #ff5fff;
+    --dim: #707070;
+    --border: #2a2a2a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "SF Mono", "Menlo", "Consolas", "Courier New", monospace;
+    font-size: 15px;
+    line-height: 1.4;
+    overflow: hidden;
+  }
+  body { display: flex; flex-direction: column; }
+  #toolbar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    background: #141414;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    align-items: center;
+  }
+  #toolbar .spacer { flex: 1; }
+  #toolbar button {
+    background: #1f1f1f;
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0.25rem 0.6rem;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  #toolbar button:hover { background: #2a2a2a; }
+  #toolbar .stat { color: var(--dim); }
+  #toolbar .stat span { color: var(--green); }
+  #screen {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.2rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  #output .ansi-yellow-fg { color: var(--yellow); }
+  #output .ansi-cyan-fg   { color: var(--cyan); }
+  #output .ansi-white-fg  { color: #f0f0f0; }
+  #output .ansi-red-fg    { color: var(--red); }
+  #output .ansi-green-fg  { color: var(--green); }
+  #output .ansi-magenta-fg{ color: var(--magenta); }
+  #output .ansi-bold      { font-weight: bold; }
+  #input-line {
+    display: flex;
+    align-items: baseline;
+    padding: 0 1.2rem 1rem 1.2rem;
+  }
+  #input-line #prompt {
+    color: var(--green);
+    margin-right: 0.5rem;
+    white-space: pre;
+  }
+  #input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+    padding: 0;
+  }
+  #status { color: var(--dim); font-size: 11px; margin-left: 0.5rem; }
+  #status.connected { color: var(--green); }
+  #status.disconnected { color: var(--red); }
+</style>
+</head>
+<body>
+  <div id="toolbar">
+    <span class="stat">NEWZORK <span>— October 1999</span></span>
+    <span class="stat">| Score: <span id="score-stat">0</span></span>
+    <span class="stat">| Health: <span id="health-stat">100</span></span>
+    <span class="stat">| Warmth: <span id="warmth-stat">100</span></span>
+    <span class="spacer"></span>
+    <span id="status" class="disconnected">disconnected</span>
+    <button id="btn-save" title="Download save file">Save</button>
+    <button id="btn-load" title="Upload a save file">Load</button>
+    <button id="btn-reset" title="Start over">Reset</button>
+    <input type="file" id="file-input" accept=".json" style="display:none">
+  </div>
+  <div id="screen">
+    <div id="output"></div>
+    <div id="input-line">
+      <span id="prompt">&gt;&nbsp;</span>
+      <input id="input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" autofocus>
+    </div>
+  </div>
+
+<script>
+"use strict";
+
+let ws = null;
+let sessionId = null;
+let state = null;
+let history = [];
+let historyIndex = -1;
+let draft = "";
+let prompt = "> ";
+const STORAGE_KEY = "newzork.state";
+const SESSION_KEY = "newzork.session_id";
+const HISTORY_KEY = "newzork.history";
+
+function ansiToHtml(text) {
+  const fgMap = {
+    30: "", 31: "red", 32: "green", 33: "yellow",
+    34: "blue", 35: "magenta", 36: "cyan", 37: "white"
+  };
+  let s = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  s = s.replace(/\x1b\[([0-9;]*)m/g, (_, codes) => {
+    const parts = codes.split(";").map(c => parseInt(c, 10));
+    let result = "";
+    for (const p of parts) {
+      if (p === 0) result += "</span>";
+      else if (p === 1) result = "<span class='ansi-bold'>" + result;
+      else if (fgMap[p]) {
+        const cls = fgMap[p] ? `ansi-${fgMap[p]}-fg` : "";
+        result += "</span><span class='" + cls + "'>";
+      }
+    }
+    return result;
+  });
+  return s;
+}
+
+const output = document.getElementById("output");
+const input = document.getElementById("input");
+const promptEl = document.getElementById("prompt");
+const statusEl = document.getElementById("status");
+const scoreStat = document.getElementById("score-stat");
+const healthStat = document.getElementById("health-stat");
+const warmthStat = document.getElementById("warmth-stat");
+const btnSave = document.getElementById("btn-save");
+const btnLoad = document.getElementById("btn-load");
+const btnReset = document.getElementById("btn-reset");
+const fileInput = document.getElementById("file-input");
+const screen = document.getElementById("screen");
+
+function append(text) {
+  if (!text) return;
+  const div = document.createElement("div");
+  div.innerHTML = ansiToHtml(text);
+  output.appendChild(div);
+  screen.scrollTop = screen.scrollHeight;
+}
+
+function appendEcho(cmd) {
+  const div = document.createElement("div");
+  div.innerHTML = "<span style=\"color:var(--green)\">" + escapeHtml(prompt) + "</span>" + escapeHtml(cmd);
+  output.appendChild(div);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function updateToolbar() {
+  if (state) {
+    scoreStat.textContent = state.score != null ? state.score : 0;
+    healthStat.textContent = state.health != null ? state.health : 100;
+    warmthStat.textContent = state.warmth != null ? state.warmth : 100;
+  }
+}
+
+function setPrompt(p) {
+  prompt = p;
+  promptEl.textContent = p;
+}
+
+function setStatus(text, klass) {
+  statusEl.textContent = text;
+  statusEl.className = klass || "";
+}
+
+function connect() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(proto + "://" + location.host + "/ws");
+  ws.onopen = () => setStatus("connected", "connected");
+  ws.onclose = () => {
+    setStatus("disconnected — retrying in 2s", "disconnected");
+    setTimeout(connect, 2000);
+  };
+  ws.onerror = () => setStatus("error", "disconnected");
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      handleServer(msg);
+    } catch (err) {
+      console.error("bad message", err);
+    }
+  };
+}
+
+function handleServer(msg) {
+  if (msg.type === "init") {
+    sessionId = msg.session_id;
+    state = msg.state;
+    output.innerHTML = "";
+    append(msg.crawl);
+    setPrompt(msg.prompt);
+    updateToolbar();
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.turns > state.turns) {
+          if (confirm("You have a saved game with more progress. Load it?")) {
+            ws.send(JSON.stringify({type: "load", state: parsed}));
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+  } else if (msg.type === "output") {
+    state = msg.state;
+    append(msg.text);
+    setPrompt(msg.prompt);
+    updateToolbar();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } else if (msg.type === "save_data") {
+    downloadSave(msg.state);
+  } else if (msg.type === "error") {
+    append("[error] " + msg.message);
+  } else if (msg.type === "pong") {
+    /* heartbeat */
+  }
+}
+
+function sendCommand() {
+  const text = input.value;
+  if (!text.trim()) return;
+  appendEcho(text);
+  history.push(text);
+  if (history.length > 100) history.shift();
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  historyIndex = -1;
+  draft = "";
+  input.value = "";
+  ws.send(JSON.stringify({type: "command", text: text}));
+}
+
+function downloadSave(stateObj) {
+  const blob = new Blob([JSON.stringify(stateObj, null, 2)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "newzork-save-" + new Date().toISOString().slice(0,10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  append("[Save downloaded to your Downloads folder.]");
+}
+
+btnSave.addEventListener("click", () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({type: "save_request"}));
+  } else {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) downloadSave(JSON.parse(saved));
+    else append("[No save available.]");
+  }
+});
+
+btnLoad.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const stateObj = JSON.parse(ev.target.result);
+      ws.send(JSON.stringify({type: "load", state: stateObj}));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateObj));
+    } catch (err) {
+      append("[error] Could not parse save file: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+  fileInput.value = "";
+});
+
+btnReset.addEventListener("click", () => {
+  if (confirm("Start a new game? Current progress will be lost (unless you saved).")) {
+    localStorage.removeItem(STORAGE_KEY);
+    ws.send(JSON.stringify({type: "reset"}));
+  }
+});
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendCommand();
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    if (history.length === 0) return;
+    if (historyIndex === -1) {
+      draft = input.value;
+      historyIndex = history.length - 1;
+    } else if (historyIndex > 0) {
+      historyIndex--;
+    }
+    input.value = history[historyIndex] || "";
+  } else if (e.key === "ArrowDown") {
+    e.preventDefault();
+    if (historyIndex === -1) return;
+    if (historyIndex < history.length - 1) {
+      historyIndex++;
+      input.value = history[historyIndex];
+    } else {
+      historyIndex = -1;
+      input.value = draft;
+    }
+  }
+});
+
+screen.addEventListener("click", (e) => {
+  if (e.target.tagName === "BUTTON" || e.target.tagName === "INPUT") return;
+  input.focus();
+});
+
+try {
+  const h = localStorage.getItem(HISTORY_KEY);
+  if (h) history = JSON.parse(h);
+} catch (e) { history = []; }
+
+connect();
+input.focus();
+</script>
+</body>
+</html>
