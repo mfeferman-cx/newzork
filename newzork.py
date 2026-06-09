@@ -22,6 +22,10 @@ class GameState:
         self.inventory = []
         self.visited_rooms = set()
         self.door_unlocked = False  # Special state for the control room door
+        self.lights_on = False      # M2: Track if lights are on
+        self.score = 0              # M2: Track player score
+        self.panel_opened = False   # M2: Track if panel is opened
+        self.generator_used = False # M2: Track if generator is used
 
 # Initialize game state
 game_state = GameState()
@@ -39,7 +43,16 @@ def print_crawl():
 
 def describe_room(room_id):
     """Describe the current room."""
-    room = world_data.rooms[room_id]
+    room = world_data.rooms[room_id].copy()  # Make a copy to modify
+    
+    # M2: Handle conditional exits for lower_platform based on lights_on
+    if room_id == "lower_platform" and game_state.lights_on:
+        # Add the conditional exits when lights are on
+        room['exits'] = room['exits'].copy()  # Make a copy of exits
+        room['exits']['north'] = "toolshed"
+        room['exits']['east'] = "old_office"
+        # Update description to reflect that it's no longer dark
+        room['dark'] = False
     
     # Print room name in yellow
     print(f"{YELLOW}[{room['name']}]{RESET}")
@@ -74,6 +87,12 @@ def look_command(args):
     # Look at specific item
     item_name = " ".join(args).lower()
     
+    # Strip articles
+    articles = ["a", "an", "the", "it"]
+    words = item_name.split()
+    if words and words[0] in articles:
+        item_name = " ".join(words[1:])
+    
     # Check if item is in current room
     current_room = world_data.rooms[game_state.current_room]
     for item_id in current_room['items']:
@@ -94,6 +113,60 @@ def look_command(args):
         feature = world_data.features[feature_id]
         if item_name in [feature['name']] + feature.get('synonyms', []):
             print(f"{CYAN}{feature['name'].capitalize()}{RESET}: {WHITE}{feature['description']}{RESET}")
+            return
+    
+    print(f"{RED}You don't see that here.{RESET}")
+
+def read_command(args):
+    """Handle the read command."""
+    if not args:
+        print(f"{RED}Read what?{RESET}")
+        return
+    
+    # Read specific item or feature
+    item_name = " ".join(args).lower()
+    
+    # Strip articles
+    articles = ["a", "an", "the", "it"]
+    words = item_name.split()
+    if words and words[0] in articles:
+        item_name = " ".join(words[1:])
+    
+    # Check if item is in current room
+    current_room = world_data.rooms[game_state.current_room]
+    for item_id in current_room['items']:
+        item = world_data.items[item_id]
+        if item_name in [item['name']] + item.get('synonyms', []):
+            print(f"{CYAN}{item['name'].capitalize()}{RESET}: {WHITE}{item['description']}{RESET}")
+            # If item has text, also print that
+            if 'text' in item:
+                print(f"{WHITE}{item['text']}{RESET}")
+            return
+    
+    # Check if item is in inventory
+    for item_id in game_state.inventory:
+        item = world_data.items[item_id]
+        if item_name in [item['name']] + item.get('synonyms', []):
+            print(f"{CYAN}{item['name'].capitalize()}{RESET}: {WHITE}{item['description']}{RESET}")
+            # If item has text, also print that
+            if 'text' in item:
+                print(f"{WHITE}{item['text']}{RESET}")
+            return
+    
+    # Check if item is a feature
+    for feature_id in current_room['features']:
+        feature = world_data.features[feature_id]
+        if item_name in [feature['name']] + feature.get('synonyms', []):
+            print(f"{CYAN}{feature['name'].capitalize()}{RESET}: {WHITE}{feature['description']}{RESET}")
+            # If feature has text, also print that
+            if 'text' in feature:
+                # Special case: show different text based on state
+                if feature_id == "broken_panel" and game_state.panel_opened:
+                    print(f"{WHITE}The wiring inside is scorched. You'll need a fuel cell to restore power.{RESET}")
+                elif feature_id == "generator" and game_state.generator_used:
+                    print(f"{WHITE}The generator hums steadily. The fuel gauge reads 73%.{RESET}")
+                else:
+                    print(f"{WHITE}{feature['text']}{RESET}")
             return
     
     print(f"{RED}You don't see that here.{RESET}")
@@ -245,6 +318,27 @@ def use_command(args):
         else:
             game_state.door_unlocked = True
             print(f"{WHITE}You unlock the maintenance door with the key.{RESET}")
+    elif target_id == "broken_panel" and effect == "unlock":
+        # M2: Use panel_key on broken_panel
+        if game_state.panel_opened:
+            print(f"{WHITE}The fusebox panel is already open.{RESET}")
+        else:
+            game_state.panel_opened = True
+            print(f"{WHITE}The fusebox panel swings open, revealing ancient wiring.{RESET}")
+    elif target_id == "generator" and effect == "restore_power":
+        # M2: Use fuel_cell on generator
+        if game_state.generator_used:
+            print(f"{WHITE}The generator is already running.{RESET}")
+        else:
+            game_state.generator_used = True
+            game_state.lights_on = True
+            game_state.score += 10
+            print(f"{WHITE}The generator groans to life. Fluorescent lights flicker on throughout the museum. You feel less alone.{RESET}")
+            # Remove the fuel cell from inventory since it's consumable
+            if item.get('consumable', False):
+                game_state.inventory.remove(item_id)
+            # Update the room description to show it's no longer dark
+            describe_room(game_state.current_room)
     else:
         print(f"{WHITE}You use the {item['name']} on the {target_name}. Nothing happens.{RESET}")
 
@@ -307,6 +401,12 @@ def quit_command(args):
     print(f"{WHITE}The darkness closes in...{RESET}")
     sys.exit(0)
 
+def score_command(args):
+    """Handle the score command."""
+    # M2: For now, we have 1 puzzle (restore the lights) worth 10 points
+    puzzles_solved = 1 if game_state.lights_on else 0
+    print(f"{WHITE}Puzzles solved: {puzzles_solved}/3 | Score: {game_state.score}{RESET}")
+
 def main():
     """Main game loop."""
     print_crawl()
@@ -327,6 +427,8 @@ def main():
             # Handle commands
             if verb in ["look", "l", "examine", "x"]:
                 look_command(args)
+            elif verb in ["read"]:
+                read_command(args)
             elif verb in ["go", "walk", "move"]:
                 go_command(args)
             elif verb in ["n", "north", "s", "south", "e", "east", "w", "west", "u", "up", "d", "down"]:
@@ -342,6 +444,8 @@ def main():
                 inventory_command(args)
             elif verb in ["use", "activate", "apply"]:
                 use_command(args)
+            elif verb in ["score"]:
+                score_command(args)
             elif verb in ["quit", "exit"]:
                 quit_command(args)
             else:
