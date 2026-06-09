@@ -34,7 +34,7 @@ rooms = {
             "west": "main_concourse",
             "north": "control_room"
         },
-        "items": ["subway_token", "maintenance_key", "fuel_cell"],
+        "items": ["subway_token", "maintenance_key"],
         "features": ["control_room_door"],
         "dark": False,
         "cold": False
@@ -47,7 +47,7 @@ rooms = {
         "exits": {
             "south": "exhibits_hall"
         },
-        "items": ["emergency_flares"],
+        "items": ["emergency_flares", "fuel_cell"],
         "features": [],
         "dark": False,
         "cold": False
