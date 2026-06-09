@@ -75,8 +75,10 @@ The spec's test path says "go north (control_room) → take fuel_cell", but `fue
 - New features: `broken_panel`, `generator` ✅
 - New rooms: `toolshed`, `old_office` ✅
 - New verbs: `read` ✅, `look <feature>` ✅, `score` ✅
-- Score logic: +10 on lights restore (would work if puzzle path worked) ✅
-- Known issues: **2 critical parser/gating defects, 1 cosmetic score denominator, 1 spec inconsistency**
+- Score logic: +10 on lights restore ✅
+- Known issues: **none remaining — M2 is fully playable end-to-end**
+- **M2 verified working:** full 20-step test path passes, captured in `m2-test-output.txt`
+- **M3 spec drafted:** `M3-SPEC.md` (above-ground expansion, automatic wear for the parka, no new verbs)
 
 ## Recommendation
 
