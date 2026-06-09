@@ -1,7 +1,7 @@
 """
-World data for NewZork M1 - The Concourse
+World data for NewZork M1-M3
 
-This module contains the room and item definitions for the first milestone
+This module contains the room and item definitions for the first three milestones
 of the NewZork text adventure game.
 """
 
@@ -71,7 +71,8 @@ rooms = {
         "description": "A cramped maintenance toolshed. Rakes, shovels, and snow shovels line the walls. A radio sits on a shelf, its display dead.",
         "short_desc": "You're in the cramped maintenance toolshed. Tools line the walls.",
         "exits": {
-            "south": "lower_platform"
+            "south": "lower_platform",
+            "up": "museum_exit"
         },
         "items": [],
         "features": [],
@@ -90,6 +91,106 @@ rooms = {
         "features": [],
         "dark": False,
         "cold": False
+    },
+    "museum_exit": {
+        "id": "museum_exit",
+        "name": "Museum Exit",
+        "description": "You've emerged from the museum into the open air. The door behind you leads back to safety. Ahead, the streets of Brooklyn stretch out under a gray sky.",
+        "short_desc": "You're at the museum exit, the door back inside to your south.",
+        "exits": {
+            "south": "toolshed",
+            "north": "boerum_place",
+            "east": "atlantic_ave"
+        },
+        "items": [],
+        "features": [],
+        "dark": False,
+        "cold": True
+    },
+    "boerum_place": {
+        "id": "boerum_place",
+        "name": "Boerum Place",
+        "description": "A wide intersection, abandoned cars buried in snow up to their windows. The wind whistles between buildings. A traffic light still swings in the wind.",
+        "short_desc": "You're in Boerum Place, snow-covered cars and a swaying traffic light.",
+        "exits": {
+            "south": "museum_exit",
+            "west": "schermerhorn_st",
+            "east": "atlantic_ave",
+            "north": "city_hall_steps"
+        },
+        "items": [],
+        "features": ["traffic_light"],
+        "dark": False,
+        "cold": True
+    },
+    "schermerhorn_st": {
+        "id": "schermerhorn_st",
+        "name": "Schermerhorn Street",
+        "description": "A side street lined with parked cars buried up to their windows. A bodega with a faded 'OPEN' sign sits on the corner. The wind cuts through your clothes.",
+        "short_desc": "You're on Schermerhorn Street, parked cars and a bodega with a faded sign.",
+        "exits": {
+            "east": "boerum_place",
+            "south": "parking_lot"
+        },
+        "items": ["winter_coat"],
+        "features": [],
+        "dark": False,
+        "cold": True
+    },
+    "parking_lot": {
+        "id": "parking_lot",
+        "name": "Parking Lot",
+        "description": "A small municipal parking lot, dead end. An old taxi with keys in the ignition sits abandoned. Snow drifts pile against the fence.",
+        "short_desc": "You're in the parking lot, a dead end with an abandoned taxi.",
+        "exits": {
+            "north": "schermerhorn_st"
+        },
+        "items": [],
+        "features": ["taxi_cab"],
+        "dark": False,
+        "cold": True
+    },
+    "atlantic_ave": {
+        "id": "atlantic_ave",
+        "name": "Atlantic Avenue",
+        "description": "A longer avenue, more drifts. A stack of newspapers frozen to a bench. The wind howls between the buildings. A subway grate is set into the street.",
+        "short_desc": "You're on Atlantic Avenue, wind howling and a frozen bench with newspapers.",
+        "exits": {
+            "west": "boerum_place",
+            "north": "city_hall_steps"
+        },
+        "items": [],
+        "features": ["frozen_bench", "subway_grate"],
+        "dark": False,
+        "cold": True
+    },
+    "city_hall_steps": {
+        "id": "city_hall_steps",
+        "name": "City Hall Steps",
+        "description": "The steps of the old Brooklyn City Hall, now just rubble and snow. The building is a skeleton. To the east, Barclay Street continues.",
+        "short_desc": "You're on the City Hall steps, rubble and snow everywhere.",
+        "exits": {
+            "south": "boerum_place",
+            "west": "atlantic_ave",
+            "east": "barclay_st"
+        },
+        "items": [],
+        "features": [],
+        "dark": False,
+        "cold": True
+    },
+    "barclay_st": {
+        "id": "barclay_st",
+        "name": "Barclay Street",
+        "description": "The end of Barclay Street, blocked by a fallen tree. Snow piles against the trunk. The silence is absolute.",
+        "short_desc": "You're at the end of Barclay Street, blocked by a fallen tree.",
+        "exits": {
+            "west": "city_hall_steps"
+        },
+        "items": [],
+        "features": [],
+        "dark": False,
+        "cold": True
     }
 }
 
@@ -181,6 +282,108 @@ items = {
     }
 }
 
+# Items
+items = {
+    "flashlight": {
+        "id": "flashlight",
+        "name": "flashlight",
+        "description": "A heavy Maglite, half-dead. It flickers when you shake it.",
+        "takeable": True,
+        "use_with": {},
+        "consumable": False,
+        "light_source": True,
+        "edible": False,
+        "drinkable": False,
+        "weapon": False,
+        "synonyms": ["light", "torch"]
+    },
+    "subway_token": {
+        "id": "subway_token",
+        "name": "subway token",
+        "description": "An old brass subway token from a city that no longer runs.",
+        "takeable": True,
+        "use_with": {},
+        "consumable": False,
+        "light_source": False,
+        "edible": False,
+        "drinkable": False,
+        "weapon": False,
+        "synonyms": ["token", "coin"]
+    },
+    "maintenance_key": {
+        "id": "maintenance_key",
+        "name": "maintenance key",
+        "description": "A tagged key ring with a faded 'MTA MAINT' label.",
+        "takeable": True,
+        "use_with": {
+            "control_room_door": "unlock"
+        },
+        "consumable": False,
+        "light_source": False,
+        "edible": False,
+        "drinkable": False,
+        "weapon": False,
+        "synonyms": ["key", "keys"]
+    },
+    "emergency_flares": {
+        "id": "emergency_flares",
+        "name": "emergency flares",
+        "description": "Three road flares in a weathered metal box.",
+        "takeable": True,
+        "use_with": {},
+        "consumable": True,
+        "light_source": True,
+        "edible": False,
+        "drinkable": False,
+        "weapon": False,
+        "synonyms": ["flares", "box"]
+    },
+    "panel_key": {
+        "id": "panel_key",
+        "name": "panel key",
+        "description": "A tiny brass key with an electrical union stamp. It's warm to the touch.",
+        "takeable": True,
+        "use_with": {
+            "broken_panel": "unlock"
+        },
+        "consumable": False,
+        "light_source": False,
+        "edible": False,
+        "drinkable": False,
+        "weapon": False,
+        "synonyms": ["key", "tiny key", "brass key"]
+    },
+    "fuel_cell": {
+        "id": "fuel_cell",
+        "name": "fuel cell",
+        "description": "A heavy steel cylinder with radiation stickers. The gauge reads 73%.",
+        "takeable": True,
+        "use_with": {
+            "generator": "restore_power"
+        },
+        "consumable": True,
+        "light_source": False,
+        "edible": False,
+        "drinkable": False,
+        "weapon": False,
+        "synonyms": ["cell", "nuclear cell", "steel cylinder"]
+    },
+    "winter_coat": {
+        "id": "winter_coat",
+        "name": "winter coat",
+        "description": "A faded parka with a fur-lined hood. The zipper is stuck but the buttons work.",
+        "takeable": True,
+        "use_with": {},
+        "consumable": False,
+        "light_source": False,
+        "edible": False,
+        "drinkable": False,
+        "weapon": False,
+        "auto_wear": True,
+        "synonyms": ["parka", "coat"]
+    }
+}
+
 # Features
 features = {
     "control_room_door": {
@@ -231,5 +434,38 @@ features = {
             "fuel_cell": "restore_power"
         },
         "synonyms": ["backup generator", "diesel generator"]
+    },
+    "traffic_light": {
+        "id": "traffic_light",
+        "name": "traffic light",
+        "description": "A traffic light still swings in the wind, creaking on its rusted pole. It's frozen in place, pointing north.",
+        "takeable": False,
+        "use_with": {},
+        "synonyms": ["light", "traffic signal"]
+    },
+    "frozen_bench": {
+        "id": "frozen_bench",
+        "name": "frozen bench",
+        "description": "A bench with newspapers frozen to it. The stack is thick with time.",
+        "takeable": False,
+        "use_with": {},
+        "synonyms": ["bench"]
+    },
+    "taxi_cab": {
+        "id": "taxi_cab",
+        "name": "taxi cab",
+        "description": "An old yellow taxi with keys in the ignition. The engine is dead, frozen solid.",
+        "takeable": False,
+        "use_with": {},
+        "synonyms": ["taxi", "cab", "car"]
+    },
+    "subway_grate": {
+        "id": "subway_grate",
+        "name": "subway grate",
+        "description": "FROZEN SHUT. The grate is locked from below. The rail tunnels go somewhere, but you can't get in from here.",
+        "text": "FROZEN SHUT. The grate is locked from below. The rail tunnels go somewhere, but you can't get in from here.",
+        "takeable": False,
+        "use_with": {},
+        "synonyms": ["grate", "subway entrance"]
     }
 }
