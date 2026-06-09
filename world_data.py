@@ -133,7 +133,7 @@ rooms = {
             "south": "parking_lot"
         },
         "items": ["winter_coat"],
-        "features": [],
+        "features": ["bodega"],
         "dark": False,
         "cold": True
     },
@@ -175,7 +175,7 @@ rooms = {
             "east": "barclay_st"
         },
         "items": [],
-        "features": [],
+        "features": ["sky_view"],
         "dark": False,
         "cold": True
     },
@@ -449,7 +449,7 @@ features = {
         "description": "A bench with newspapers frozen to it. The stack is thick with time.",
         "takeable": False,
         "use_with": {},
-        "synonyms": ["bench"]
+        "synonyms": ["bench", "newspapers", "newspaper", "stack"]
     },
     "taxi_cab": {
         "id": "taxi_cab",
@@ -467,5 +467,21 @@ features = {
         "takeable": False,
         "use_with": {},
         "synonyms": ["grate", "subway entrance"]
+    },
+    "bodega": {
+        "id": "bodega",
+        "name": "bodega",
+        "description": "A faded corner store with an 'OPEN' sign still lit. The windows are frosted over. You can't see inside.",
+        "takeable": False,
+        "use_with": {},
+        "synonyms": ["store", "corner store"]
+    },
+    "sky_view": {
+        "id": "sky_view",
+        "name": "sky",
+        "description": "You look up. The Manhattan skyline rises ahead, every window dark. The bridges are gone. There's nothing left.",
+        "takeable": False,
+        "use_with": {},
+        "synonyms": ["sky", "skyline", "manhattan", "up"]
     }
 }

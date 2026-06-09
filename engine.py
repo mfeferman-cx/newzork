@@ -71,6 +71,8 @@ def process_command(state, command_line):
         _inventory(state, out)
     elif verb in ("use", "activate", "apply"):
         _use(state, args, out)
+    elif verb in ("open", "unlock", "close", "lock", "push", "pull", "move"):
+        _open_or_unlock(state, args, out)
     elif verb == "score":
         _score(state, out)
     elif verb in ("help", "?"):
@@ -78,7 +80,7 @@ def process_command(state, command_line):
     elif verb in ("quit", "exit"):
         out.append(_crawl_farewell())
     else:
-        out.append(f"{R}You can't do that here. Try: look, go, take, use, inventory, score, help, quit.{E}")
+        out.append(f"{R}You can't do that here. Try: look, go, take, drop, use, read, inventory, score, help, quit.{E}")
 
     state["turns"] += 1
     return "\n".join(out)
@@ -186,11 +188,12 @@ def _describe_room(state, room_id, out):
 
 
 def _strip_articles(s):
-    articles = {"a", "an", "the", "it"}
+    # Strip leading articles AND prepositions like "at" that players use naturally
+    articles = {"a", "an", "the", "it", "at"}  # "at" so 'look at door' works
     words = s.split()
-    if words and words[0] in articles:
-        return " ".join(words[1:])
-    return s
+    while words and words[0] in articles:
+        words = words[1:]
+    return " ".join(words)
 
 
 def _look(state, args, out):
@@ -222,7 +225,13 @@ def _look(state, args, out):
     for fid in current["features"]:
         feat = features[fid]
         if name == fid or name == feat["name"] or name in feat.get("synonyms", []):
-            out.append(f"{C}{feat['name'].capitalize()}{E}: {W}{feat['description']}{E}")
+            # State-aware descriptions for things that change over time
+            if fid == "broken_panel" and state["panel_opened"]:
+                out.append(f"{C}{feat['name'].capitalize()}{E}: {W}The fusebox panel hangs open, revealing ancient wiring.{E}")
+            elif fid == "generator" and state["generator_used"]:
+                out.append(f"{C}{feat['name'].capitalize()}{E}: {W}A massive diesel generator, humming steadily. The fuel gauge reads 73%.{E}")
+            else:
+                out.append(f"{C}{feat['name'].capitalize()}{E}: {W}{feat['description']}{E}")
             return
 
     out.append(f"{R}You don't see that here.{E}")
@@ -270,32 +279,34 @@ def _take(state, args, out):
     name = _strip_articles(" ".join(args).lower())
     rooms = _world(state)["rooms"]
     items = _world(state)["items"]
+    features = _world(state)["features"]
     current = rooms[state["current_room"]]
 
-    item_id = None
+    # First check items (the normal takeable path)
     for iid in current["items"]:
         it = items[iid]
         if name == iid or name == it["name"] or name in it.get("synonyms", []):
-            item_id = iid
-            break
-    if not item_id:
-        out.append(f"{R}You don't see that here.{E}")
-        return
+            if not it.get("takeable", False):
+                out.append(f"{R}You can't take that.{E}")
+                return
+            if it.get("auto_wear", False):
+                current["items"].remove(iid)
+                state["worn_items"].append(iid)
+                out.append(f"{W}You put on the {it['name']}. It's stiff but warm.{E}")
+                return
+            current["items"].remove(iid)
+            state["inventory"].append(iid)
+            out.append(f"{W}Taken.{E}")
+            return
 
-    it = items[item_id]
-    if not it.get("takeable", False):
-        out.append(f"{R}You can't take that.{E}")
-        return
+    # Then check features — they're visible but never takeable
+    for fid in current["features"]:
+        feat = features[fid]
+        if name == fid or name == feat["name"] or name in feat.get("synonyms", []):
+            out.append(f"{R}You can't take that.{E}")
+            return
 
-    if it.get("auto_wear", False):
-        current["items"].remove(item_id)
-        state["worn_items"].append(item_id)
-        out.append(f"{W}You put on the {it['name']}. It's stiff but warm.{E}")
-        return
-
-    current["items"].remove(item_id)
-    state["inventory"].append(item_id)
-    out.append(f"{W}Taken.{E}")
+    out.append(f"{R}You don't see that here.{E}")
 
 
 def _drop(state, args, out):
@@ -424,6 +435,45 @@ def _use(state, args, out):
         out.append(f"{W}You use the {it['name']} on the {target_name}. Nothing happens.{E}")
 
 
+def _open_or_unlock(state, args, out):
+    """Handle open/unlock/close/lock/push/pull. The M2 door is the only lockable thing in M3."""
+    if not args:
+        out.append(f"{R}Open what?{E}")
+        return
+    name = _strip_articles(" ".join(args).lower())
+    rooms = _world(state)["rooms"]
+    features = _world(state)["features"]
+    current = rooms[state["current_room"]]
+
+    # M2: maintenance door in main_concourse / exhibits_hall
+    if name in ("door", "maintenance door", "north door") and state["current_room"] in ("main_concourse", "exhibits_hall"):
+        if state["door_unlocked"]:
+            out.append(f"{W}The maintenance door is already unlocked.{E}")
+        else:
+            out.append(f"{R}The door is locked. You'll need a key.{E}")
+        return
+
+    # M2: broken_panel in lower_platform
+    if name in ("panel", "broken panel", "fusebox", "fusebox panel"):
+        if state["current_room"] != "lower_platform":
+            out.append(f"{R}You don't see that here.{E}")
+            return
+        if state["panel_opened"]:
+            out.append(f"{W}The fusebox panel is already open.{E}")
+        else:
+            out.append(f"{R}It's rusted shut. There must be a key somewhere...{E}")
+        return
+
+    # Check if it's a feature the player can push/pull (atmosphere)
+    for fid in current["features"]:
+        feat = features[fid]
+        if name == fid or name == feat["name"] or name in feat.get("synonyms", []):
+            out.append(f"{W}Nothing interesting happens.{E}")
+            return
+
+    out.append(f"{R}You don't see that here.{E}")
+
+
 def _apply_environment_effects(state, dest_id, out):
     rooms = _world(state)["rooms"]
     dest = rooms[dest_id]
@@ -503,11 +553,12 @@ def _help(out):
     out.append(
         f"{W}Commands:{E}\n"
         f"  {C}look (l, x) [thing]{E}      — describe room or examine something\n"
+        f"  {C}read <thing>{E}             — read text on something\n"
         f"  {C}go (n/s/e/w/u/d){E}         — move (or just type a direction)\n"
         f"  {C}take (get) <item>{E}        — pick something up\n"
         f"  {C}drop <item>{E}              — put something down\n"
         f"  {C}use <item> [on <target>]{E} — use an item, optionally on something\n"
-        f"  {C}read <item>{E}              — read text on something\n"
+        f"  {C}open / unlock <thing>{E}    — try to open or unlock something\n"
         f"  {C}inventory (i){E}            — list what you're carrying\n"
         f"  {C}score{E}                    — show puzzles solved\n"
         f"  {C}help (?) {E}                — this list\n"
