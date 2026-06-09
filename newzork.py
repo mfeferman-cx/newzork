@@ -15,6 +15,9 @@ WHITE = '\033[97m'
 RED = '\033[91m'
 RESET = '\033[0m'
 
+# Game constants
+TOTAL_PUZZLES = 1
+
 # Game state
 class GameState:
     def __init__(self):
@@ -412,7 +415,7 @@ def score_command(args):
     """Handle the score command."""
     # M2: For now, we have 1 puzzle (restore the lights) worth 10 points
     puzzles_solved = 1 if game_state.lights_on else 0
-    print(f"{WHITE}Puzzles solved: {puzzles_solved}/3 | Score: {game_state.score}{RESET}")
+    print(f"{WHITE}Puzzles solved: {puzzles_solved}/{TOTAL_PUZZLES} | Score: {game_state.score}{RESET}")
 
 def main():
     """Main game loop."""
