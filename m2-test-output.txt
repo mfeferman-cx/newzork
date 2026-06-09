@@ -1,0 +1,86 @@
+══════════════════════════════════════════
+  NEWZORK — October 1999
+══════════════════════════════════════════
+The city fell three months ago. The dead
+walk the frozen streets. You've barricaded
+yourself in the old Transit Museum, but
+supplies are running low...
+
+[Main Concourse]
+You stand on the entry platform of what was once the NYC Transit Museum. Two decommissioned subway cars sit on rusted tracks, and a single emergency light casts flickering shadows across the concourse. The air is thick with dust and the silence is absolute.
+
+You can see: flashlight
+
+Exits: east, down
+
+> Taken.
+> [Exhibits Hall]
+You're in the exhibits hall, surrounded by dusty displays and a locked door to the north.
+
+You can see: subway token, maintenance key
+
+Exits: west, north
+
+> Taken.
+> Taken.
+> You unlock the maintenance door with the key.
+> [Control Room]
+The control room is small and cramped, with a desk covered in old equipment and a single chair. An emergency cabinet hangs on the wall, and the only exit is south back to the exhibits hall.
+
+You can see: emergency flares, fuel cell
+
+Exits: south
+
+> Taken.
+> [Exhibits Hall]
+You're in the exhibits hall, surrounded by dusty displays and a locked door to the north.
+
+Exits: west, north
+
+> [Main Concourse]
+You're back in the main concourse, where two old subway cars sit in the dim light.
+
+Exits: east, down
+
+> [Lower Platform]
+The stairs down have partially collapsed, and the platform below is shrouded in darkness. A rusted turnstile blocks the path, and an old MTA map hangs crookedly on the wall. You can barely make out the shapes of abandoned subway cars in the shadows.
+
+You can see: panel key
+
+Exits: up
+
+> Taken.
+> The fusebox panel swings open, revealing ancient wiring.
+> The generator groans to life. Fluorescent lights flicker on throughout the museum. You feel less alone.
+[Lower Platform]
+You're on the dark lower platform, where collapsed stairs lead to shadowy depths.
+
+Exits: up, north, east
+
+> Puzzles solved: 1/1 | Score: 10
+> [Toolshed]
+A cramped maintenance toolshed. Rakes, shovels, and snow shovels line the walls. A radio sits on a shelf, its display dead.
+
+Exits: south
+
+> [Toolshed]
+You're in the cramped maintenance toolshed. Tools line the walls.
+
+Exits: south
+
+> [Lower Platform]
+You're on the dark lower platform, where collapsed stairs lead to shadowy depths.
+
+Exits: up, north, east
+
+> [Old Office]
+The museum curator's old office. Papers are scattered across the floor. A coffee mug sits on the desk, frozen mid-spill.
+
+Exits: west
+
+> [Old Office]
+You're in the curator's old office, papers scattered everywhere.
+
+Exits: west
+
+> The darkness closes in...
