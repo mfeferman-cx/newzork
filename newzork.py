@@ -97,21 +97,21 @@ def look_command(args):
     current_room = world_data.rooms[game_state.current_room]
     for item_id in current_room['items']:
         item = world_data.items[item_id]
-        if item_name in [item['name']] + item.get('synonyms', []):
+        if item_name == item['id'] or item_name in [item['name']] + item.get('synonyms', []):
             print(f"{CYAN}{item['name'].capitalize()}{RESET}: {WHITE}{item['description']}{RESET}")
             return
     
     # Check if item is in inventory
     for item_id in game_state.inventory:
         item = world_data.items[item_id]
-        if item_name in [item['name']] + item.get('synonyms', []):
+        if item_name == item['id'] or item_name in [item['name']] + item.get('synonyms', []):
             print(f"{CYAN}{item['name'].capitalize()}{RESET}: {WHITE}{item['description']}{RESET}")
             return
     
     # Check if item is a feature
     for feature_id in current_room['features']:
         feature = world_data.features[feature_id]
-        if item_name in [feature['name']] + feature.get('synonyms', []):
+        if item_name == feature['id'] or item_name in [feature['name']] + feature.get('synonyms', []):
             print(f"{CYAN}{feature['name'].capitalize()}{RESET}: {WHITE}{feature['description']}{RESET}")
             return
     
@@ -136,7 +136,7 @@ def read_command(args):
     current_room = world_data.rooms[game_state.current_room]
     for item_id in current_room['items']:
         item = world_data.items[item_id]
-        if item_name in [item['name']] + item.get('synonyms', []):
+        if item_name == item['id'] or item_name in [item['name']] + item.get('synonyms', []):
             print(f"{CYAN}{item['name'].capitalize()}{RESET}: {WHITE}{item['description']}{RESET}")
             # If item has text, also print that
             if 'text' in item:
@@ -146,7 +146,7 @@ def read_command(args):
     # Check if item is in inventory
     for item_id in game_state.inventory:
         item = world_data.items[item_id]
-        if item_name in [item['name']] + item.get('synonyms', []):
+        if item_name == item['id'] or item_name in [item['name']] + item.get('synonyms', []):
             print(f"{CYAN}{item['name'].capitalize()}{RESET}: {WHITE}{item['description']}{RESET}")
             # If item has text, also print that
             if 'text' in item:
@@ -156,7 +156,7 @@ def read_command(args):
     # Check if item is a feature
     for feature_id in current_room['features']:
         feature = world_data.features[feature_id]
-        if item_name in [feature['name']] + feature.get('synonyms', []):
+        if item_name == feature['id'] or item_name in [feature['name']] + feature.get('synonyms', []):
             print(f"{CYAN}{feature['name'].capitalize()}{RESET}: {WHITE}{feature['description']}{RESET}")
             # If feature has text, also print that
             if 'text' in feature:
@@ -191,7 +191,7 @@ def take_command(args):
     item_id = None
     for iid in current_room['items']:
         item = world_data.items[iid]
-        if item_name in [item['name']] + item.get('synonyms', []):
+        if item_name == item['id'] or item_name in [item['name']] + item.get('synonyms', []):
             item_id = iid
             break
     
@@ -257,7 +257,7 @@ def use_command(args):
     item_id = None
     for iid in game_state.inventory:
         item = world_data.items[iid]
-        if item_name in [item['name']] + item.get('synonyms', []):
+        if item_name == item['id'] or item_name in [item['name']] + item.get('synonyms', []):
             item_id = iid
             break
     
@@ -284,7 +284,7 @@ def use_command(args):
     # Check room items
     for iid in current_room['items']:
         target_item = world_data.items[iid]
-        if target_name in [target_item['name']] + target_item.get('synonyms', []):
+        if target_name == target_item['id'] or target_name in [target_item['name']] + target_item.get('synonyms', []):
             target_id = iid
             break
     
@@ -292,7 +292,7 @@ def use_command(args):
     if not target_id:
         for fid in current_room['features']:
             feature = world_data.features[fid]
-            if target_name in [feature['name']] + feature.get('synonyms', []):
+            if target_name == feature['id'] or target_name in [feature['name']] + feature.get('synonyms', []):
                 target_id = fid
                 break
     
