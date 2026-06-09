@@ -29,6 +29,9 @@ class GameState:
         self.score = 0              # M2: Track player score
         self.panel_opened = False   # M2: Track if panel is opened
         self.generator_used = False # M2: Track if generator is used
+        self.warmth = 100           # M3: Track player warmth
+        self.health = 100           # M3: Track player health
+        self.worn_items = []        # M3: Track worn items
 
 # Initialize game state
 game_state = GameState()
@@ -208,6 +211,14 @@ def take_command(args):
         print(f"{RED}You can't take that.{RESET}")
         return
     
+    # M3: Handle automatic wear for items with auto_wear flag
+    if item.get('auto_wear', False):
+        # Remove item from room and add to worn_items
+        current_room['items'].remove(item_id)
+        game_state.worn_items.append(item_id)
+        print(f"{WHITE}You put on the {item['name']}. It's stiff but warm.{RESET}")
+        return
+    
     # Remove item from room and add to inventory
     current_room['items'].remove(item_id)
     game_state.inventory.append(item_id)
@@ -217,7 +228,9 @@ def take_command(args):
 
 def inventory_command(args):
     """Handle the inventory command."""
-    if not game_state.inventory:
+    # M3: Include worn items in inventory display
+    all_items = game_state.inventory + game_state.worn_items
+    if not all_items:
         print(f"{WHITE}You're not carrying anything.{RESET}")
         return
     
@@ -225,6 +238,58 @@ def inventory_command(args):
     for item_id in game_state.inventory:
         item = world_data.items[item_id]
         print(f"  {CYAN}{item['name']}{RESET}")
+    for item_id in game_state.worn_items:
+        item = world_data.items[item_id]
+        print(f"  {CYAN}{item['name']} (worn){RESET}")
+
+def drop_command(args):
+    """Handle the drop command."""
+    if not args:
+        print(f"{RED}Drop what?{RESET}")
+        return
+    
+    item_name = " ".join(args).lower()
+    
+    # Strip articles
+    articles = ["a", "an", "the", "it"]
+    words = item_name.split()
+    if words and words[0] in articles:
+        item_name = " ".join(words[1:])
+    
+    # Check if item is in inventory
+    item_id = None
+    for iid in game_state.inventory:
+        item = world_data.items[iid]
+        if item_name == item['id'] or item_name in [item['name']] + item.get('synonyms', []):
+            item_id = iid
+            break
+    
+    # Check if item is worn
+    if not item_id:
+        for iid in game_state.worn_items:
+            item = world_data.items[iid]
+            if item_name == item['id'] or item_name in [item['name']] + item.get('synonyms', []):
+                item_id = iid
+                break
+    
+    if not item_id:
+        print(f"{RED}You don't have that.{RESET}")
+        return
+    
+    item = world_data.items[item_id]
+    
+    # Remove from inventory or worn_items
+    if item_id in game_state.inventory:
+        game_state.inventory.remove(item_id)
+    elif item_id in game_state.worn_items:
+        game_state.worn_items.remove(item_id)
+        print(f"{WHITE}You shrug off the {item['name']}.{RESET}")
+    
+    # Add to current room
+    current_room = world_data.rooms[game_state.current_room]
+    current_room['items'].append(item_id)
+    
+    print(f"{WHITE}Dropped.{RESET}")
 
 
 def use_command(args):
@@ -346,6 +411,41 @@ def use_command(args):
         print(f"{WHITE}You use the {item['name']} on the {target_name}. Nothing happens.{RESET}")
 
 
+def apply_environment_effects(destination_id):
+    """Apply environmental effects based on the destination room."""
+    destination = world_data.rooms[destination_id]
+    
+    # M3: Apply cold damage if room is cold
+    if destination.get('cold', False):
+        # Check if player is wearing winter_coat
+        if 'winter_coat' in game_state.worn_items:
+            # Halved cold damage with coat
+            game_state.warmth -= 2
+        else:
+            # Full cold damage without coat
+            game_state.warmth -= 5
+        
+        # Clamp warmth to [0, 100]
+        game_state.warmth = max(0, min(100, game_state.warmth))
+        
+        # If warmth is 0, take health damage
+        if game_state.warmth == 0:
+            game_state.health -= 1
+            # Clamp health to [0, 100]
+            game_state.health = max(0, min(100, game_state.health))
+            
+            # If health reaches 0, player dies
+            if game_state.health == 0:
+                print(f"{RED}You succumb to the cold. The world fades to white.{RESET}")
+                sys.exit(0)
+    else:
+        # M3: Restore warmth and health when going underground
+        game_state.warmth += 10
+        game_state.health += 5
+        # Clamp to [0, 100]
+        game_state.warmth = max(0, min(100, game_state.warmth))
+        game_state.health = max(0, min(100, game_state.health))
+
 def go_command(args):
     """Handle the go command."""
     if not args:
@@ -403,6 +503,10 @@ def go_command(args):
     
     # Move to the new room
     game_state.current_room = destination_id
+    
+    # M3: Apply environmental effects
+    apply_environment_effects(destination_id)
+    
     describe_room(destination_id)
 
 
@@ -424,7 +528,12 @@ def main():
     
     while True:
         try:
-            command = input("> ").strip().lower()
+            # M3: Show warmth in prompt when in cold rooms
+            current_room = world_data.rooms[game_state.current_room]
+            if current_room.get('cold', False):
+                command = input(f"> [W:{game_state.warmth}] ").strip().lower()
+            else:
+                command = input("> ").strip().lower()
             
             if not command:
                 continue
@@ -450,6 +559,8 @@ def main():
                     take_command(args[1:])
                 else:
                     take_command(args)
+            elif verb in ["drop"]:
+                drop_command(args)
             elif verb in ["inventory", "i", "inv"]:
                 inventory_command(args)
             elif verb in ["use", "activate", "apply"]:
