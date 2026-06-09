@@ -108,6 +108,7 @@ R = "\033[91m"  # red    — danger, errors
 G = "\033[92m"  # green  — success
 M = "\033[95m"  # magenta— hints
 B = "\033[1m"   # bold
+DIM = "\033[2m" # dim    — features
 E = "\033[0m"   # reset
 
 # Per-session world copies
@@ -165,9 +166,17 @@ def _describe_room(state, room_id, out):
         out.append(f"{W}{room['short_desc']}{E}")
 
     items = _world(state)["items"]
-    if room["items"]:
-        names = [items[iid]["name"] for iid in room["items"]]
-        out.append(f"\nYou can see: {C}" + ", ".join(names) + f"{E}")
+    features = _world(state)["features"]
+
+    # Build "You can see:" list combining takeable items + interactable features.
+    # Items in cyan, features in dim italic to distinguish them.
+    visible = []
+    for iid in room["items"]:
+        visible.append(f"{C}{items[iid]['name']}{E}")
+    for fid in room["features"]:
+        visible.append(f"{DIM}{features[fid]['name']}{E}")
+    if visible:
+        out.append("\nYou can see: " + ", ".join(visible))
 
     if room["exits"]:
         exits = list(room["exits"].keys())
