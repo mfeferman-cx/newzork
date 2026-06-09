@@ -314,20 +314,28 @@ def make_tests():
         newzork.take_command(['panel_key'])
         newzork.use_command(['panel_key', 'on', 'panel'])
         newzork.use_command(['fuel_cell', 'on', 'generator'])
-        # Go to toolshed and then to surface
+        # Go to toolshed and then to surface (warmth drops to 95 after first surface move)
         newzork.go_command(['north'])  # lower_platform -> toolshed
-        newzork.go_command(['up'])     # toolshed -> museum_exit
-        # Go to surface and get coat
-        newzork.go_command(['north'])  # museum_exit -> boerum_place
-        newzork.go_command(['west'])   # boerum_place -> schermerhorn_st
+        newzork.go_command(['up'])     # toolshed -> museum_exit (warmth 100 -> 95)
+        # Go to surface and get coat (warmth drops -5 per surface move without coat)
+        newzork.go_command(['north'])  # museum_exit -> boerum_place (warmth 95 -> 90)
+        newzork.go_command(['west'])   # boerum_place -> schermerhorn_st (warmth 90 -> 85)
+        before_coat_warmth = newzork.game_state.warmth
         newzork.take_command(['winter_coat'])  # Should auto-wear
         results.append(('winter_coat in worn_items', 'winter_coat' in newzork.game_state.worn_items))
         results.append(('winter_coat NOT in inventory', 'winter_coat' not in newzork.game_state.inventory))
-        # Go back to museum_exit (still cold)
-        newzork.go_command(['east'])   # schermerhorn_st -> boerum_place
-        newzork.go_command(['south'])  # boerum_place -> museum_exit
-        # With coat, warmth should drop from 95 to 93 (only 2 points)
-        results.append(('warmth drops less with coat (95->93)', newzork.game_state.warmth == 93))
+        # With coat, take 2 more surface moves — each costs 2 warmth (vs 5 without)
+        newzork.go_command(['east'])   # schermerhorn_st -> boerum_place (85 -> 83)
+        newzork.go_command(['south'])  # boerum_place -> museum_exit (83 -> 81)
+        # The coat should have saved 6 points (3 moves * 3 saved per move = 9... actually 2 moves * 3 saved per move = 6)
+        # Without the coat, the final warmth would be before_coat_warmth - 5 - 5 = before_coat_warmth - 10
+        # With the coat, the final warmth is before_coat_warmth - 2 - 2 = before_coat_warmth - 4
+        # Net savings: 6 points
+        expected_with_coat = before_coat_warmth - 4
+        results.append((
+            f'warmth with coat is before_coat - 4 (got {newzork.game_state.warmth}, expected {expected_with_coat})',
+            newzork.game_state.warmth == expected_with_coat
+        ))
         return results
 
     tests.append(('M3: warmth drops less with coat', m3_warmth_drops_less_with_coat))

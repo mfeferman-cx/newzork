@@ -63,7 +63,7 @@ rooms = {
         "items": ["panel_key"],
         "features": ["rusted_turnstile", "mta_map", "generator", "broken_panel"],
         "dark": True,
-        "cold": True
+        "cold": False
     },
     "toolshed": {
         "id": "toolshed",
