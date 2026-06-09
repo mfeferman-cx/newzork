@@ -291,8 +291,9 @@ def make_tests():
         newzork.take_command(['panel_key'])
         newzork.use_command(['panel_key', 'on', 'panel'])
         newzork.use_command(['fuel_cell', 'on', 'generator'])
-        # Now go to surface
-        newzork.go_command(['north'])  # toolshed -> museum_exit
+        # Now go to toolshed and then to surface
+        newzork.go_command(['north'])  # lower_platform -> toolshed
+        newzork.go_command(['up'])     # toolshed -> museum_exit
         results.append(('warmth drops from 100 to 95 on surface', newzork.game_state.warmth == 95))
         return results
 
@@ -313,16 +314,18 @@ def make_tests():
         newzork.take_command(['panel_key'])
         newzork.use_command(['panel_key', 'on', 'panel'])
         newzork.use_command(['fuel_cell', 'on', 'generator'])
+        # Go to toolshed and then to surface
+        newzork.go_command(['north'])  # lower_platform -> toolshed
+        newzork.go_command(['up'])     # toolshed -> museum_exit
         # Go to surface and get coat
-        newzork.go_command(['north'])  # toolshed -> museum_exit
-        newzork.go_command(['west'])   # museum_exit -> boerum_place
+        newzork.go_command(['north'])  # museum_exit -> boerum_place
         newzork.go_command(['west'])   # boerum_place -> schermerhorn_st
         newzork.take_command(['winter_coat'])  # Should auto-wear
         results.append(('winter_coat in worn_items', 'winter_coat' in newzork.game_state.worn_items))
         results.append(('winter_coat NOT in inventory', 'winter_coat' not in newzork.game_state.inventory))
         # Go back to museum_exit (still cold)
         newzork.go_command(['east'])   # schermerhorn_st -> boerum_place
-        newzork.go_command(['east'])   # boerum_place -> museum_exit
+        newzork.go_command(['south'])  # boerum_place -> museum_exit
         # With coat, warmth should drop from 95 to 93 (only 2 points)
         results.append(('warmth drops less with coat (95->93)', newzork.game_state.warmth == 93))
         return results
@@ -345,10 +348,12 @@ def make_tests():
         newzork.use_command(['panel_key', 'on', 'panel'])
         newzork.use_command(['fuel_cell', 'on', 'generator'])
         # Go to surface
-        newzork.go_command(['north'])  # toolshed -> museum_exit
+        newzork.go_command(['north'])  # lower_platform -> toolshed
+        newzork.go_command(['up'])     # toolshed -> museum_exit
         # Go back underground
         newzork.go_command(['south'])  # museum_exit -> toolshed
-        # Warmth should restore by 10 points
+        newzork.go_command(['south'])  # toolshed -> lower_platform
+        # Warmth should restore by 10 points (95->100)
         results.append(('warmth restores underground (95->100)', newzork.game_state.warmth == 100))
         return results
 
@@ -369,8 +374,9 @@ def make_tests():
         newzork.take_command(['panel_key'])
         newzork.use_command(['panel_key', 'on', 'panel'])
         newzork.use_command(['fuel_cell', 'on', 'generator'])
-        # Now go up from toolshed to museum_exit
-        newzork.go_command(['up'])  # toolshed -> museum_exit
+        # Now go to toolshed and then up to museum_exit
+        newzork.go_command(['north'])  # lower_platform -> toolshed
+        newzork.go_command(['up'])     # toolshed -> museum_exit
         results.append(('go up from toolshed enters museum_exit', newzork.game_state.current_room == 'museum_exit'))
         return results
 
@@ -399,9 +405,11 @@ def make_tests():
         newzork.take_command(['panel_key'])
         newzork.use_command(['panel_key', 'on', 'panel'])
         newzork.use_command(['fuel_cell', 'on', 'generator'])
+        # Go to toolshed and then to surface
+        newzork.go_command(['north'])  # lower_platform -> toolshed
+        newzork.go_command(['up'])     # toolshed -> museum_exit
         # Go to surface and get coat
-        newzork.go_command(['north'])  # toolshed -> museum_exit
-        newzork.go_command(['west'])   # museum_exit -> boerum_place
+        newzork.go_command(['north'])  # museum_exit -> boerum_place
         newzork.go_command(['west'])   # boerum_place -> schermerhorn_st
         newzork.take_command(['winter_coat'])  # Should auto-wear
         results.append(('winter_coat in worn_items', 'winter_coat' in newzork.game_state.worn_items))
